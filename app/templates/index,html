@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>My FastAPI Application</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/css/style.css"
+    >
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>FastAPI Docker Application</h1>
+
+        <p>
+            This page is running from FastAPI.
+        </p>
+
+        <button id="helloButton">
+            Test API
+        </button>
+
+        <div id="result">
+            Click the button to test the FastAPI backend.
+        </div>
+
+    </div>
+
+    <script src="/static/js/app.js"></script>
+
+</body>
+
+</html>
