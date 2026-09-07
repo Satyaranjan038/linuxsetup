@@ -273,6 +273,9 @@ async def signaling(websocket: WebSocket, code: str):
                 data = json.loads(msg)
             except ValueError:
                 continue
+            if data.get("type") == "ping":
+                # Client keepalive - never broadcast it to the room.
+                continue
             target = data.get("to")
             for other in room.peers:
                 if other.peer_id == peer.peer_id:

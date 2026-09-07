@@ -83,6 +83,7 @@ const state = {
     segStart: performance.now(),
     probeDone: false,     /* max-link-speed probe finished */
     pendingStart: false,  /* transfer waiting for the probe to finish */
+    pingTimer: null,      /* signaling keepalive interval */
 };
 
 /* ---------------- protocol constants ---------------- */
@@ -278,6 +279,7 @@ function connectSocket(code) {
     };
 
     state.ws.onclose = () => {
+        if (state.pingTimer) { clearInterval(state.pingTimer); state.pingTimer = null; }
         if (state.cancelled || state.finished) return;
         /* If a transfer is already in flight, the direct WebRTC channel does
            not need signaling anymore - NEVER kill it because the signaling
@@ -297,6 +299,17 @@ function connectSocket(code) {
         const busy = state.sending || state.recvExpected > 0 || state.filesMap.size > 0;
         if (!busy) toast("Signal connection error", "error");
     };
+
+    /* Keepalive: the signaling socket is IDLE during the whole transfer
+       (file data goes device-to-device). Idle WebSockets are dropped by
+       docker-proxy / NAT gateways, and the server then wrongly declares
+       the sender gone. A tiny ping every 20 s keeps it alive. */
+    if (state.pingTimer) clearInterval(state.pingTimer);
+    state.pingTimer = setInterval(() => {
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+            try { state.ws.send(JSON.stringify({ type: "ping" })); } catch (_) {}
+        }
+    }, 20000);
 }
 
 function handleSignal(msg) {
@@ -983,6 +996,7 @@ function resetTransfer() {
     state.pendingEndIds = new Set();
     state.probeDone = false;
     state.pendingStart = false;
+    if (state.pingTimer) { clearInterval(state.pingTimer); state.pingTimer = null; }
 
     $("file-list").innerHTML = "";
     $("file-status").innerHTML = "";
