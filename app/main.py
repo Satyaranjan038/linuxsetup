@@ -140,9 +140,11 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 # ---------------------------------------------------------------
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    # New Starlette signature: (request, template_name, context)
     return templates.TemplateResponse(
+        request,
         "index.html",
-        {"request": request, "app_name": "HyperDrop"},
+        {"app_name": "HyperDrop"},
     )
 
 

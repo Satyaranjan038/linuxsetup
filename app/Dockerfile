@@ -27,4 +27,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # uvicorn[standard] ships the websockets library needed for /ws/{code} signaling.
 # Env vars pass through: MAX_PEERS, ROOM_TTL_SECONDS, PUBLIC_BASE_URL
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--ws", "websockets"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--ws", "auto"]
