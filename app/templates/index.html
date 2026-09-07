@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperDrop — File Transfer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-inner">
+        <span class="brand">HyperDrop</span>
+        <span class="nav-note">Direct device-to-device transfer · Nothing stored on the server</span>
+    </div>
+</nav>
+
+<main class="stage">
+
+    <!-- HOME -->
+    <section class="screen active" id="screen-home">
+        <div class="card">
+            <h1>Share files between devices</h1>
+            <p class="sub">Files travel directly from one device to the other over an encrypted connection. The server never sees your data.</p>
+            <div class="actions">
+                <button class="btn primary" id="btn-send">Send Files</button>
+                <button class="btn" id="btn-receive">Receive Files</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEND -->
+    <section class="screen" id="screen-send">
+        <div class="card">
+            <div class="card-head">
+                <h2>Send Files</h2>
+                <button class="back-btn" data-back="screen-home">Back</button>
+            </div>
+            <div id="drop-zone">
+                <p><strong>Click or drop files here</strong></p>
+                <p class="sub">Videos, photos, documents — any type, any size.</p>
+                <input type="file" id="file-input" multiple hidden>
+            </div>
+            <div id="file-list"></div>
+            <div id="room-banner" hidden class="room-banner">
+                <div class="room-row">
+                    <span class="room-label">Room code</span>
+                    <span class="room-code" id="room-code">------</span>
+                    <button class="btn small" id="btn-copy">Copy code</button>
+                    <button class="btn small" id="btn-copy-link">Copy link</button>
+                </div>
+                <div class="room-row">
+                    <span class="room-label">QR code</span>
+                    <img id="qr-img" alt="Scan to join" hidden>
+                </div>
+                <div class="room-row">
+                    <span class="room-label">Receiver link</span>
+                    <span class="join-link" id="join-link" hidden></span>
+                </div>
+            </div>
+            <button class="btn primary block" id="btn-start">Start transfer</button>
+        </div>
+    </section>
+
+    <!-- RECEIVE -->
+    <section class="screen" id="screen-receive">
+        <div class="card narrow">
+            <div class="card-head">
+                <h2>Receive Files</h2>
+                <button class="back-btn" data-back="screen-home">Back</button>
+            </div>
+            <p class="sub">Enter the 6-character code the sender shared, or scan their QR code.</p>
+            <input class="code-input" id="join-code" maxlength="6" placeholder="ABC123" autocomplete="off" spellcheck="false">
+            <button class="btn primary block" id="btn-join">Connect</button>
+        </div>
+    </section>
+
+    <!-- TRANSFER -->
+    <section class="screen" id="screen-transfer">
+        <div class="card narrow">
+            <div class="transfer-top">
+                <h2 id="transfer-title">Connecting...</h2>
+                <span id="connection-tag" class="tag">Secure channel</span>
+                <span id="conn-orb" class="orb"></span>
+            </div>
+            <div id="send-peer-strip"></div>
+            <div id="peers-strip"></div>
+            <div class="speed-row">
+                <span id="speed-num">0.00</span> <span id="speed-unit">MB/s</span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+            <div class="progress-info">
+                <span id="progress-pct">0%</span>
+                <span id="progress-size">0 B / 0 B</span>
+            </div>
+            <div id="file-status"></div>
+            <div class="bot-panel">
+                <div class="bot-head">Activity log</div>
+                <div class="bot-log" id="bot-log"></div>
+            </div>
+            <button class="btn primary block" id="btn-download" hidden>Download all files</button>
+            <button class="btn block" id="btn-done" hidden>New transfer</button>
+            <button class="btn danger block" id="btn-cancel" hidden>Cancel</button>
+        </div>
+    </section>
+
+</main>
+
+<footer class="foot">HyperDrop — files travel device-to-device. Nothing is stored or uploaded.</footer>
+<div class="toast" id="toast"></div>
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
