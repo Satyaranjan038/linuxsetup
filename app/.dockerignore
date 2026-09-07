@@ -8,7 +8,13 @@ venv/
 
 .git/
 .gitignore
+.github/
 
 .env
+.env.*
 
 *.log
+*.md
+
+Dockerfile
+.dockerignore
