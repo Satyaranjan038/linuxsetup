@@ -211,6 +211,7 @@ function ensurePeer(pid) {
             sent: 0,
             total: 0,
             nextFid: 0,
+            chunkSize: 64 * 1024,
         });
         renderFileList();
     }
@@ -450,6 +451,18 @@ function makePeer(forPeerId) {
 /* ---------------- link speed probe + route info ---------------- */
 const PROBE_BYTES = 8 * 1024 * 1024; /* 8 MB burst to measure the link */
 
+/* Read the receiver's max-message-size from the negotiated SDP.
+   Returns 64 KB (the universal safe minimum) when it is not advertised,
+   e.g. by Safari — which drops larger messages silently. */
+function detectChunkSize(pc) {
+    try {
+        const sdp = (pc && pc.remoteDescription && pc.remoteDescription.sdp) || "";
+        const m = sdp.match(/a=max-message-size:(\d+)/);
+        if (m) return Math.max(16384, Math.min(262144, parseInt(m[1], 10)));
+    } catch (_) { /* keep the safe default */ }
+    return 64 * 1024;
+}
+
 /* Host side: blast 8 MB as fast as SCTP accepts it. */
 async function runProbe(dc) {
     const chunk = new Uint8Array(64 * 1024);
@@ -520,9 +533,9 @@ async function logRoute(pc) {
 }
 
 /* Read one framed chunk: [uint32 index][uint32 fid][payload]. */
-async function readChunk(file, index, fid) {
-    const start = index * CHUNK_SIZE;
-    const slice = file.slice(start, Math.min(start + CHUNK_SIZE, file.size));
+async function readChunk(file, index, fid, chunkSize) {
+    const start = index * chunkSize;
+    const slice = file.slice(start, Math.min(start + chunkSize, file.size));
     const payload = await slice.arrayBuffer();
     const buf = new Uint8Array(8 + payload.byteLength);
     const dv = new DataView(buf.buffer);
@@ -565,6 +578,13 @@ function wireDataChannel(dc, pid) {
     dc.onopen = () => {
         peer.connected = true;
         peer.connecting = false;
+        /* Each browser advertises a max-message-size in the SDP handshake.
+           Chrome allows 256 KB, Safari/iOS silently drops anything above
+           64 KB. Pick a chunk size the RECEIVER can actually swallow. */
+        peer.chunkSize = detectChunkSize(peer.pc);
+        if (state.isHost) {
+            logBot(`Chunk size for device ${shortId(pid)}: ${Math.round(peer.chunkSize / 1024)} KB.`);
+        }
         updatePeerChips();
         logBot(state.isHost
             ? `Connected to device ${shortId(pid)}. Starting transfer.`
@@ -752,18 +772,19 @@ async function sendOneFile(file, peer, fileIndex, fileCount) {
     logBot(`Sending file ${fileIndex + 1}/${fileCount}: "${file.name}" (${formatBytes(file.size)})`);
     peer.dc.send(JSON.stringify({ type: "meta", id, fid, name: file.name, size: file.size, mime: file.type }));
 
-    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    const chunkSize = peer.chunkSize || CHUNK_SIZE;
+    const totalChunks = Math.ceil(file.size / chunkSize);
     let lastPct = 0;
 
     /* Pipelined: the next chunk is read from disk WHILE the current one is
        in flight, so the network is never idle waiting for the file system. */
-    let buf = await readChunk(file, 0, fid);
+    let buf = await readChunk(file, 0, fid, chunkSize);
     for (let index = 0; index < totalChunks; index++) {
         if (state.cancelled) return;
         await waitDrain(peer.dc);
         if (state.cancelled || peer.dc.readyState !== "open") return;
 
-        const nextPromise = index + 1 < totalChunks ? readChunk(file, index + 1, fid) : null;
+        const nextPromise = index + 1 < totalChunks ? readChunk(file, index + 1, fid, chunkSize) : null;
         peer.dc.send(buf);
 
         peer.sent += buf.byteLength - 8;

@@ -168,12 +168,18 @@ def _get_lan_ip() -> str:
 
 def _join_base(request: Request) -> str:
     """Base URL a phone on the same network can actually reach.
-    Never 'localhost' — that would point the scanning device at itself."""
+    Never 'localhost' — that would point the scanning device at itself.
+    Inside Docker, _get_lan_ip() returns the unreachable container IP
+    (e.g. 172.17.0.2), so prefer the Host the sender's browser used —
+    that address is reachable by every device on the same network."""
     if PUBLIC_BASE_URL:
         return PUBLIC_BASE_URL
-    host = request.headers.get("host", "")
-    port = host.split(":")[1] if ":" in host else "80"
-    return f"http://{_get_lan_ip()}:{port}"
+    host = (request.headers.get("host") or "").strip()
+    if host:
+        hostname = host.split(":")[0].strip("[]")
+        if hostname not in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+            return f"http://{host}"
+    return f"http://{_get_lan_ip()}:8000"
 
 
 @app.get("/api/room/new")
